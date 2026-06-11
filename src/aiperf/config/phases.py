@@ -29,6 +29,7 @@ from aiperf.config.loader.duration import (
     _parse_duration,
 )
 from aiperf.config.ramp import RampConfig, RampSpec, _normalize_ramp
+from aiperf.config.rate_sine import RateSineConfig
 from aiperf.plugin.enums import PhaseType, PhaseTypeStr, RampType
 
 __all__ = [
@@ -46,6 +47,7 @@ __all__ = [
     "RampConfig",
     "RampSpec",
     "RampType",
+    "RateSineConfig",
     "RatePhaseConfig",
     "UserCentricPhase",
     "_normalize_duration",
@@ -315,6 +317,31 @@ class RatePhaseConfig(BasePhaseConfig):
             "Can be number (seconds) or {duration, strategy}.",
         ),
     ]
+
+    rate_sine: Annotated[
+        RateSineConfig | None,
+        Field(
+            default=None,
+            description="Sinusoidally modulate request rate around the configured rate.",
+        ),
+    ]
+
+    @model_validator(mode="after")
+    def validate_rate_sine_constraints(self) -> Self:
+        """Validate request-rate sine shaping constraints."""
+        if self.rate_sine is None:
+            return self
+        if self.rate_sine.amplitude >= self.rate:
+            raise ValueError(
+                f"Phase '{self.name}': rate_sine.amplitude must be less than rate "
+                f"({self.rate}) so the sine wave trough remains positive"
+            )
+        if self.rate_ramp is not None and self.rate_sine.delay < self.rate_ramp.duration:
+            raise ValueError(
+                f"Phase '{self.name}': rate_sine.delay must be >= rate_ramp.duration "
+                "when both are set so ramping completes before sine shaping starts"
+            )
+        return self
 
 
 class PoissonPhase(RatePhaseConfig):

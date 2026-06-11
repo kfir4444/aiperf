@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from aiperf.common.enums import CreditPhase
 from aiperf.common.environment import Environment
@@ -23,6 +23,7 @@ from aiperf.timing.branch_orchestrator import BranchOrchestrator
 from aiperf.timing.phase.lifecycle import PhaseLifecycle
 from aiperf.timing.phase.progress_tracker import PhaseProgressTracker
 from aiperf.timing.phase.stop_conditions import StopConditionChecker
+from aiperf.timing.rate_sine import RateSineController
 from aiperf.timing.ramping import Ramper, RamperConfig, RampType
 from aiperf.timing.strategies.core import RateSettableProtocol
 from aiperf.timing.url_samplers import URLSelectionStrategyProtocol
@@ -37,6 +38,14 @@ if TYPE_CHECKING:
     from aiperf.timing.phase.publisher import PhasePublisher
     from aiperf.timing.request_cancellation import RequestCancellationSimulator
     from aiperf.timing.strategies.core import TimingStrategyProtocol
+
+
+class RateControllerProtocol(Protocol):
+    """Background controller that can update phase limits over time."""
+
+    def start(self) -> asyncio.Task: ...
+
+    def stop(self) -> None: ...
 
 
 class PhaseRunner(TaskManagerMixin):
@@ -139,7 +148,7 @@ class PhaseRunner(TaskManagerMixin):
         self._progress_task: asyncio.Task | None = None
         self._return_wait_task: asyncio.Task | None = None
         self._was_cancelled = False
-        self._rampers: list[Ramper] = []
+        self._rampers: list[RateControllerProtocol] = []
 
     def _build_credit_issuer(
         self, url_selection_strategy: URLSelectionStrategyProtocol | None
@@ -529,6 +538,29 @@ class PhaseRunner(TaskManagerMixin):
                 self.warning(
                     f"Strategy {strategy.__class__.__name__} does not implement RateSettableProtocol. "
                     "Request rate will be fixed at the target value."
+                )
+
+        if config.request_rate_sine and config.request_rate:
+            if isinstance(strategy, RateSettableProtocol):
+                update_interval = Environment.TIMING.RATE_RAMP_UPDATE_INTERVAL
+                self.info(
+                    f"Starting request rate sine: center={config.request_rate} QPS, "
+                    f"amplitude={config.request_rate_sine.amplitude} QPS, "
+                    f"frequency={config.request_rate_sine.frequency} Hz, "
+                    f"delay={config.request_rate_sine.delay}s"
+                )
+                self._rampers.append(
+                    RateSineController(
+                        setter=strategy.set_request_rate,
+                        center_rate=config.request_rate,
+                        config=config.request_rate_sine,
+                        update_interval=update_interval,
+                    )
+                )
+            else:
+                self.warning(
+                    f"Strategy {strategy.__class__.__name__} does not implement RateSettableProtocol. "
+                    "Request rate sine shaping will be ignored."
                 )
 
     def _format_phase_started(self, stats: CreditPhaseStats) -> str:

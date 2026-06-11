@@ -53,6 +53,9 @@ _LOADGEN_FIELDS: frozenset[str] = frozenset(
         "concurrency_ramp_duration",
         "prefill_concurrency_ramp_duration",
         "request_rate_ramp_duration",
+        "request_rate_sine_amplitude",
+        "request_rate_sine_delay",
+        "request_rate_sine_frequency",
         "arrival_smoothness",
     }
 )
@@ -251,6 +254,20 @@ class TestTimingConfigFromCLIConfig:
             p.request_rate,
             p.total_expected_requests,
         ) == (8, 4, 50.0, 500)
+
+    def test_maps_request_rate_sine(self) -> None:
+        cfg = _make_timing_config(
+            request_rate=50.0,
+            request_rate_sine_frequency=0.25,
+            request_rate_sine_amplitude=10.0,
+            request_rate_sine_delay=5.0,
+            request_count=500,
+        )
+        p = next(pc for pc in cfg.phase_configs if pc.phase == CreditPhase.PROFILING)
+        assert p.request_rate_sine is not None
+        assert p.request_rate_sine.frequency == 0.25
+        assert p.request_rate_sine.amplitude == 10.0
+        assert p.request_rate_sine.delay == 5.0
 
     def test_creates_warmup_when_configured(self) -> None:
         cfg = _make_timing_config(warmup_request_count=25)

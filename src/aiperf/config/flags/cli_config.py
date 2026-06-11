@@ -1778,6 +1778,42 @@ class CLIConfig(BaseConfig):
         ),
     ] = None
 
+    request_rate_sine_frequency: Annotated[
+        float | None,
+        Field(
+            gt=0,
+            description="Frequency in cycles per second for sinusoidal request-rate modulation.",
+        ),
+        CLIParameter(
+            name=("--request-rate-sine-frequency",),
+            group=Groups.LOAD_GENERATOR,
+        ),
+    ] = None
+
+    request_rate_sine_amplitude: Annotated[
+        float | None,
+        Field(
+            gt=0,
+            description="Absolute QPS delta around the configured request rate for sine modulation.",
+        ),
+        CLIParameter(
+            name=("--request-rate-sine-amplitude",),
+            group=Groups.LOAD_GENERATOR,
+        ),
+    ] = None
+
+    request_rate_sine_delay: Annotated[
+        float | None,
+        Field(
+            ge=0,
+            description="Seconds after phase start before request-rate sine modulation begins.",
+        ),
+        CLIParameter(
+            name=("--request-rate-sine-delay",),
+            group=Groups.LOAD_GENERATOR,
+        ),
+    ] = None
+
     ##############################################################################
     # Warmup
     ##############################################################################

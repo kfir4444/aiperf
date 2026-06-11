@@ -233,6 +233,45 @@ JSON Export: artifacts/your-model-chat-concurrency100/profile_export_aiperf.json
 
 This limits prefill to 20 concurrent requests (ramped over 20 seconds), while allowing up to 100 total concurrent requests.
 
+## Request Rate Sine Shaping
+
+For cyclic traffic patterns, keep `--request-rate` as the center line and add a
+sine wave around it. The amplitude is an absolute QPS delta, so a 100 QPS center
+rate with amplitude 25 oscillates between 75 and 125 QPS.
+
+```bash
+aiperf profile \
+    --model your-model \
+    --url localhost:8000 \
+    --request-rate 100 \
+    --request-rate-ramp-duration 30 \
+    --request-rate-sine-frequency 0.05 \
+    --request-rate-sine-amplitude 25 \
+    --request-rate-sine-delay 30 \
+    --benchmark-duration 180
+```
+
+`--request-rate-sine-delay` starts the sine wave after the phase begins. When
+you combine sine shaping with `--request-rate-ramp-duration`, set the delay to
+at least the ramp duration so ramping reaches the center rate before the sine
+wave takes over.
+
+YAML uses the same shape:
+
+```yaml
+benchmark:
+  phases:
+    - name: profiling
+      type: poisson
+      duration: 180s
+      rate: 100
+      rateRamp: 30s
+      rateSine:
+        frequency: 0.05
+        amplitude: 25
+        delay: 30s
+```
+
 ## Warmup Phase Ramping
 
 Each phase can have its own ramp settings. Warmup uses `--warmup-*` prefixed options:
@@ -321,6 +360,16 @@ Rate updates continuously (every 0.1 seconds by default):
 
 This creates smooth traffic curves without sudden jumps.
 
+### Request Rate Sine Shaping (Cyclic Load)
+
+After the optional delay, rate updates follow:
+
+```text
+request_rate + amplitude * sin(2 * pi * frequency * elapsed_seconds)
+```
+
+`amplitude` must be less than `request_rate`, keeping the trough above zero.
+
 ## Quick Reference
 
 | Option | Description | Default |
@@ -328,6 +377,9 @@ This creates smooth traffic curves without sudden jumps.
 | `--concurrency-ramp-duration <sec>` | Ramp session concurrency over N seconds | No ramping |
 | `--prefill-concurrency-ramp-duration <sec>` | Ramp prefill concurrency over N seconds | No ramping |
 | `--request-rate-ramp-duration <sec>` | Ramp request rate over N seconds | No ramping |
+| `--request-rate-sine-frequency <hz>` | Sine cycles per second for request-rate modulation | Disabled |
+| `--request-rate-sine-amplitude <qps>` | Absolute QPS delta around `--request-rate` | Disabled |
+| `--request-rate-sine-delay <sec>` | Delay before sine modulation starts | 0 |
 | `--warmup-concurrency-ramp-duration <sec>` | Warmup phase concurrency ramp | Uses main value |
 | `--warmup-prefill-concurrency-ramp-duration <sec>` | Warmup phase prefill ramp | Uses main value |
 | `--warmup-request-rate-ramp-duration <sec>` | Warmup phase rate ramp | Uses main value |
@@ -337,6 +389,7 @@ This creates smooth traffic curves without sudden jumps.
 - Request rate starts proportionally low and interpolates smoothly
 - Ramps complete exactly at the specified duration
 - After ramping, values stay at the target for the rest of the phase
+- Request-rate sine shaping requires rate-controlled scheduling and uses `rate` as the center line
 
 ## Related Documentation
 

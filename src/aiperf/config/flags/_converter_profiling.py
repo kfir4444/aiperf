@@ -59,6 +59,13 @@ _RAMP_FIELDS: tuple[tuple[str, str], ...] = (
     ("request_rate_ramp_duration", "rate_ramp"),
 )
 
+_RATE_SINE_FIELDS = frozenset(
+    {
+        "request_rate_sine_frequency",
+        "request_rate_sine_amplitude",
+        "request_rate_sine_delay",
+    }
+)
 
 def _profiling_phase_type(cli: CLIConfig) -> Any:
     from aiperf.config.phases import PhaseType
@@ -86,6 +93,25 @@ def _apply_profiling_ramps(prof: dict[str, Any], cli: CLIConfig) -> None:
             prof[key] = {"duration": getattr(cli, field)}
 
 
+def _apply_profiling_rate_sine(prof: dict[str, Any], cli: CLIConfig) -> None:
+    fields_set = cli.model_fields_set
+    if not (_RATE_SINE_FIELDS & fields_set):
+        return
+    if not {
+        "request_rate_sine_frequency",
+        "request_rate_sine_amplitude",
+    }.issubset(fields_set):
+        raise ValueError(
+            "--request-rate-sine-frequency and --request-rate-sine-amplitude "
+            "must be supplied together to enable request-rate sine shaping."
+        )
+    prof["rate_sine"] = {
+        "frequency": cli.request_rate_sine_frequency,
+        "amplitude": cli.request_rate_sine_amplitude,
+        "delay": cli.request_rate_sine_delay or 0.0,
+    }
+
+
 def _reject_orphan_load_generator_flags(prof: dict[str, Any], cli: CLIConfig) -> None:
     """Reject CLI flags whose load-generator partner wasn't supplied.
 
@@ -110,16 +136,26 @@ def _reject_orphan_load_generator_flags(prof: dict[str, Any], cli: CLIConfig) ->
         )
 
     # --request-rate-ramp-duration only ramps rate-controlled phases.
-    if "rate_ramp" in prof and phase_type not in (
+    rate_controlled_phase_types = (
         PhaseType.POISSON,
         PhaseType.GAMMA,
         PhaseType.CONSTANT,
         PhaseType.USER_CENTRIC,
-    ):
+    )
+
+    if "rate_ramp" in prof and phase_type not in rate_controlled_phase_types:
         raise ValueError(
             "--request-rate-ramp-duration can only be used with rate-controlled "
             "scheduling (--request-rate or --user-centric-rate). Pass one of "
             "those to enable rate ramping, or drop --request-rate-ramp-duration."
+        )
+
+    if "rate_sine" in prof and phase_type not in rate_controlled_phase_types:
+        raise ValueError(
+            "--request-rate-sine-frequency/--request-rate-sine-amplitude can only "
+            "be used with rate-controlled scheduling (--request-rate or "
+            "--user-centric-rate). Pass one of those to enable sine shaping, "
+            "or drop the sine flags."
         )
 
 
@@ -409,6 +445,7 @@ def build_profiling(cli: CLIConfig) -> dict[str, Any]:
             prof[output_key] = getattr(cli, attr_name)
 
     _apply_profiling_ramps(prof, cli)
+    _apply_profiling_rate_sine(prof, cli)
 
     prof["type"] = _profiling_phase_type(cli)
 

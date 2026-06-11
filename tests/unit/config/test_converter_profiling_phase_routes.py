@@ -254,3 +254,42 @@ class TestRateRampRequiresRequestRate:
         user = _make_user(loadgen=loadgen)
         prof = build_profiling(user)
         assert prof.get("rate_ramp") == {"duration": 30}
+
+
+class TestRateSineRequiresRequestRate:
+    def test_rate_sine_with_concurrency_mode_raises(self):
+        loadgen = CLIConfig(
+            request_rate_sine_frequency=0.25,
+            request_rate_sine_amplitude=10.0,
+            request_count=10,
+            concurrency=1,
+        )
+        user = _make_user(loadgen=loadgen)
+        with pytest.raises(ValueError, match="request-rate-sine.*rate-controlled"):
+            build_profiling(user)
+
+    def test_rate_sine_requires_frequency_and_amplitude(self):
+        loadgen = CLIConfig(
+            request_rate=100.0,
+            request_rate_sine_frequency=0.25,
+            request_count=10,
+        )
+        user = _make_user(loadgen=loadgen)
+        with pytest.raises(ValueError, match="frequency.*amplitude"):
+            build_profiling(user)
+
+    def test_rate_sine_with_request_rate_succeeds(self):
+        loadgen = CLIConfig(
+            request_rate=100.0,
+            request_rate_sine_frequency=0.25,
+            request_rate_sine_amplitude=10.0,
+            request_rate_sine_delay=5.0,
+            request_count=10,
+        )
+        user = _make_user(loadgen=loadgen)
+        prof = build_profiling(user)
+        assert prof.get("rate_sine") == {
+            "frequency": 0.25,
+            "amplitude": 10.0,
+            "delay": 5.0,
+        }

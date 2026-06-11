@@ -31,6 +31,7 @@ coverage.xml
 *.egg-info/
 coverage.json
 .cache/
+venv/*
 
 # Generated plugin stubs (not committed, regenerate with: make generate-plugin-enums)
 src/aiperf/plugin/enums.pyi

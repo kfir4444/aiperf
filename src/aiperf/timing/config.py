@@ -10,6 +10,7 @@ from pydantic import ConfigDict, Field
 from aiperf.common.enums import CreditPhase
 from aiperf.common.models.base_models import AIPerfBaseModel
 from aiperf.config.dataset.defaults import InputDefaults
+from aiperf.config.rate_sine import RateSineConfig
 from aiperf.plugin.enums import (
     ArrivalPattern,
     PhaseType,
@@ -206,6 +207,10 @@ class CreditPhaseConfig(AIPerfBaseModel):
         description="Duration in seconds to ramp request rate from 1 QPS to target. "
         "If None, request rate starts at target immediately.",
     )
+    request_rate_sine: RateSineConfig | None = Field(
+        default=None,
+        description="Sinusoidal request-rate modulation configuration, if enabled.",
+    )
     auto_offset_timestamps: bool = Field(
         default=InputDefaults.FIXED_SCHEDULE_AUTO_OFFSET,
         description="The auto offset timestamps of the timing manager.",
@@ -273,6 +278,7 @@ def _build_warmup_config(phase: PhaseConfig) -> CreditPhaseConfig:
         request_rate_ramp_duration_sec=_ramp_duration(
             getattr(phase, "rate_ramp", None)
         ),
+        request_rate_sine=getattr(phase, "rate_sine", None),
     )
 
 
@@ -302,6 +308,7 @@ def _build_profiling_config(phase: PhaseConfig) -> CreditPhaseConfig:
         request_rate_ramp_duration_sec=_ramp_duration(
             getattr(phase, "rate_ramp", None)
         ),
+        request_rate_sine=getattr(phase, "rate_sine", None),
         # Fixed schedule config
         auto_offset_timestamps=getattr(
             phase, "auto_offset", InputDefaults.FIXED_SCHEDULE_AUTO_OFFSET

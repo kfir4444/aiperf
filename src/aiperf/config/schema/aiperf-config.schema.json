@@ -1242,6 +1242,18 @@
                       ],
                       "default": null,
                       "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                    },
+                    "rateSine": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/RateSineConfig"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Sinusoidally modulate request rate around the configured rate."
                     }
                   },
                   "required": [
@@ -1424,6 +1436,18 @@
                       ],
                       "default": null,
                       "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                    },
+                    "rateSine": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/RateSineConfig"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Sinusoidally modulate request rate around the configured rate."
                     },
                     "smoothness": {
                       "anyOf": [
@@ -1620,6 +1644,18 @@
                       ],
                       "default": null,
                       "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                    },
+                    "rateSine": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/RateSineConfig"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Sinusoidally modulate request rate around the configured rate."
                     }
                   },
                   "required": [
@@ -1802,6 +1838,18 @@
                       ],
                       "default": null,
                       "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                    },
+                    "rateSine": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/RateSineConfig"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "default": null,
+                      "description": "Sinusoidally modulate request rate around the configured rate."
                     },
                     "users": {
                       "description": "Number of simulated concurrent users (must be >= 1). Requests distributed across users to achieve global rate.",
@@ -2944,6 +2992,18 @@
                   ],
                   "default": null,
                   "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                },
+                "rateSine": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/RateSineConfig"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Sinusoidally modulate request rate around the configured rate."
                 }
               },
               "required": [
@@ -3126,6 +3186,18 @@
                   ],
                   "default": null,
                   "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                },
+                "rateSine": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/RateSineConfig"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Sinusoidally modulate request rate around the configured rate."
                 },
                 "smoothness": {
                   "anyOf": [
@@ -3322,6 +3394,18 @@
                   ],
                   "default": null,
                   "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                },
+                "rateSine": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/RateSineConfig"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Sinusoidally modulate request rate around the configured rate."
                 }
               },
               "required": [
@@ -3504,6 +3588,18 @@
                   ],
                   "default": null,
                   "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                },
+                "rateSine": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/RateSineConfig"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Sinusoidally modulate request rate around the configured rate."
                 },
                 "users": {
                   "description": "Number of simulated concurrent users (must be >= 1). Requests distributed across users to achieve global rate.",
@@ -4062,6 +4158,18 @@
                   ],
                   "default": null,
                   "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                },
+                "rateSine": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/RateSineConfig"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Sinusoidally modulate request rate around the configured rate."
                 }
               },
               "required": [
@@ -4244,6 +4352,18 @@
                   ],
                   "default": null,
                   "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                },
+                "rateSine": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/RateSineConfig"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Sinusoidally modulate request rate around the configured rate."
                 },
                 "smoothness": {
                   "anyOf": [
@@ -4440,6 +4560,18 @@
                   ],
                   "default": null,
                   "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                },
+                "rateSine": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/RateSineConfig"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Sinusoidally modulate request rate around the configured rate."
                 }
               },
               "required": [
@@ -4622,6 +4754,18 @@
                   ],
                   "default": null,
                   "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}."
+                },
+                "rateSine": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/$defs/RateSineConfig"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "description": "Sinusoidally modulate request rate around the configured rate."
                 },
                 "users": {
                   "description": "Number of simulated concurrent users (must be >= 1). Requests distributed across users to achieve global rate.",
@@ -5511,6 +5655,18 @@
           "default": null,
           "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}.",
           "x-jinja2-supported": true
+        },
+        "rateSine": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RateSineConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sinusoidally modulate request rate around the configured rate."
         }
       },
       "required": [
@@ -7102,6 +7258,18 @@
           "default": null,
           "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}.",
           "x-jinja2-supported": true
+        },
+        "rateSine": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RateSineConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sinusoidally modulate request rate around the configured rate."
         },
         "smoothness": {
           "anyOf": [
@@ -9083,6 +9251,18 @@
           "default": null,
           "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}.",
           "x-jinja2-supported": true
+        },
+        "rateSine": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RateSineConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sinusoidally modulate request rate around the configured rate."
         }
       },
       "required": [
@@ -9629,6 +9809,89 @@
         }
       },
       "title": "RankingsConfig",
+      "type": "object"
+    },
+    "RateSineConfig": {
+      "additionalProperties": false,
+      "description": "Configuration for sinusoidal request-rate modulation.",
+      "properties": {
+        "frequency": {
+          "description": "Sine wave frequency in cycles per second.",
+          "title": "Frequency",
+          "oneOf": [
+            {
+              "description": "Sine wave frequency in cycles per second.",
+              "exclusiveMinimum": 0.0,
+              "title": "Frequency",
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "pattern": ".*\\{\\{.*\\}\\}.*",
+              "description": "Jinja2 template (e.g., '{{ variable }}')."
+            },
+            {
+              "type": "string",
+              "pattern": ".*\\$\\{[A-Za-z_][A-Za-z0-9_]*(?::[^}]*)?\\}.*",
+              "description": "Environment variable (e.g., '${VAR}' or '${VAR:default}')."
+            }
+          ],
+          "x-jinja2-supported": true
+        },
+        "amplitude": {
+          "description": "Absolute request-rate delta in QPS around the configured rate.",
+          "title": "Amplitude",
+          "oneOf": [
+            {
+              "description": "Absolute request-rate delta in QPS around the configured rate.",
+              "exclusiveMinimum": 0.0,
+              "title": "Amplitude",
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "pattern": ".*\\{\\{.*\\}\\}.*",
+              "description": "Jinja2 template (e.g., '{{ variable }}')."
+            },
+            {
+              "type": "string",
+              "pattern": ".*\\$\\{[A-Za-z_][A-Za-z0-9_]*(?::[^}]*)?\\}.*",
+              "description": "Environment variable (e.g., '${VAR}' or '${VAR:default}')."
+            }
+          ],
+          "x-jinja2-supported": true
+        },
+        "delay": {
+          "default": 0.0,
+          "description": "Seconds after phase start before sine modulation begins.",
+          "title": "Delay",
+          "oneOf": [
+            {
+              "default": 0.0,
+              "description": "Seconds after phase start before sine modulation begins.",
+              "ge": 0.0,
+              "title": "Delay",
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "pattern": ".*\\{\\{.*\\}\\}.*",
+              "description": "Jinja2 template (e.g., '{{ variable }}')."
+            },
+            {
+              "type": "string",
+              "pattern": ".*\\$\\{[A-Za-z_][A-Za-z0-9_]*(?::[^}]*)?\\}.*",
+              "description": "Environment variable (e.g., '${VAR}' or '${VAR:default}')."
+            }
+          ],
+          "x-jinja2-supported": true
+        }
+      },
+      "required": [
+        "frequency",
+        "amplitude"
+      ],
+      "title": "RateSineConfig",
       "type": "object"
     },
     "RequestContentType": {
@@ -11713,6 +11976,18 @@
           "default": null,
           "description": "Ramp rate from lower value. Can be number (seconds) or {duration, strategy}.",
           "x-jinja2-supported": true
+        },
+        "rateSine": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RateSineConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sinusoidally modulate request rate around the configured rate."
         },
         "users": {
           "description": "Number of simulated concurrent users (must be >= 1). Requests distributed across users to achieve global rate.",

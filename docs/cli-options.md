@@ -845,6 +845,21 @@ Duration in seconds to ramp prefill concurrency from 1 to target.
 Duration in seconds to ramp request rate from a proportional minimum to target. Start rate is calculated as target * (update_interval / duration), ensuring correct behavior for target rates below 1 QPS. Useful for gradual warm-up of the target system.
 <br/>_Constraints: > 0_
 
+#### `--request-rate-sine-frequency` `<float>`
+
+Frequency in cycles per second for sinusoidal request-rate modulation.
+<br/>_Constraints: > 0_
+
+#### `--request-rate-sine-amplitude` `<float>`
+
+Absolute QPS delta around the configured request rate for sine modulation.
+<br/>_Constraints: > 0_
+
+#### `--request-rate-sine-delay` `<float>`
+
+Seconds after phase start before request-rate sine modulation begins.
+<br/>_Constraints: ≥ 0_
+
 ### Warmup
 
 #### `--warmup-request-count`, `--num-warmup-requests` `<int>`
@@ -2169,6 +2184,21 @@ Duration in seconds to ramp prefill concurrency from 1 to target.
 
 Duration in seconds to ramp request rate from a proportional minimum to target. Start rate is calculated as target * (update_interval / duration), ensuring correct behavior for target rates below 1 QPS. Useful for gradual warm-up of the target system.
 <br/>_Constraints: > 0_
+
+#### `--request-rate-sine-frequency` `<float>`
+
+Frequency in cycles per second for sinusoidal request-rate modulation.
+<br/>_Constraints: > 0_
+
+#### `--request-rate-sine-amplitude` `<float>`
+
+Absolute QPS delta around the configured request rate for sine modulation.
+<br/>_Constraints: > 0_
+
+#### `--request-rate-sine-delay` `<float>`
+
+Seconds after phase start before request-rate sine modulation begins.
+<br/>_Constraints: ≥ 0_
 
 ### Warmup
 

@@ -504,6 +504,7 @@ benchmark:
       duration: 60
       rate: 10.0
       rateRamp: {duration: 15, strategy: exponential}
+      rateSine: {frequency: 0.25, amplitude: 2.5, delay: 15s}
       gracePeriod: 30
       seamless: true
 """)
@@ -516,6 +517,9 @@ benchmark:
         prof = next(p for p in config.benchmark.phases if p.name == "profiling")
         assert prof.rate_ramp.duration == 15.0
         assert prof.rate_ramp.strategy == "exponential"
+        assert prof.rate_sine.frequency == 0.25
+        assert prof.rate_sine.amplitude == 2.5
+        assert prof.rate_sine.delay == 15.0
         assert prof.grace_period == 30.0
 
     def test_fixed_schedule_camel_case_fields(self) -> None:
