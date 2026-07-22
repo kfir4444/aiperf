@@ -147,6 +147,11 @@ JINJA2_NUMERIC_REF_TYPES: set[str] = {
     "RampConfig",  # Accepts int/float/string via _normalize_ramp
 }
 
+# Known discriminator field names should win over unrelated const fields.
+# For example, phase schemas also contain adaptiveScaleStrategyType with a const,
+# but the phase union must still discriminate on type.
+DISCRIMINATOR_FIELD_PRIORITY = ("type",)
+
 
 # =============================================================================
 # Schema Generation
@@ -213,6 +218,12 @@ class ConfigSchemaGenerator(Generator):
         if self.verbose and duration_count > 0:
             print_step(f"Added duration string support to {duration_count} fields")
 
+        adaptive_sla_count = self._add_adaptive_sla_compact_form(enhanced_schema)
+        if self.verbose and adaptive_sla_count > 0:
+            print_step(
+                f"Added compact adaptive SLA form to {adaptive_sla_count} fields"
+            )
+
         # Add models field simplified forms (string/list[str] → ModelsAdvanced)
         self._add_models_simplified_forms(enhanced_schema)
         if self.verbose:
@@ -241,6 +252,12 @@ class ConfigSchemaGenerator(Generator):
         jinja2_count = self._add_jinja2_template_support(enhanced_schema)
         if self.verbose and jinja2_count > 0:
             print_step(f"Added Jinja2 template support to {jinja2_count} fields")
+
+        rate_series_count = self._tighten_rate_series_schema_contract(enhanced_schema)
+        if self.verbose and rate_series_count > 0:
+            print_step(
+                f"Tightened rate-series schema contract in {rate_series_count} places"
+            )
 
         # Serialize with proper formatting
         content = json.dumps(enhanced_schema, indent=2, ensure_ascii=False) + "\n"
@@ -321,9 +338,16 @@ class ConfigSchemaGenerator(Generator):
             def_schema = defs.get(def_name, {})
             properties = def_schema.get("properties", {})
 
-            # Look for a property with a const value (discriminator field)
+            for field_name in DISCRIMINATOR_FIELD_PRIORITY:
+                prop_schema = properties.get(field_name)
+                if isinstance(prop_schema, dict) and "const" in prop_schema:
+                    return field_name, prop_schema["const"]
+
+            # Fall back for legacy unions that use a different const field.
             for prop_name, prop_schema in properties.items():
-                if "const" in prop_schema:
+                if prop_name in DISCRIMINATOR_FIELD_PRIORITY:
+                    continue
+                if isinstance(prop_schema, dict) and "const" in prop_schema:
                     return prop_name, prop_schema["const"]
 
             return None
@@ -706,6 +730,64 @@ class ConfigSchemaGenerator(Generator):
                 walk_properties(additional, f"{path}.*")
 
         walk_properties(schema)
+        return enhanced_count
+
+    def _add_adaptive_sla_compact_form(self, schema: dict) -> int:
+        """Allow compact adaptive SLA YAML wherever BasePhaseConfig.sla appears.
+
+        Runtime accepts either the canonical ``list[SLAFilter]`` shape or a
+        compact metric/stat/op mapping, for example::
+
+            sla:
+              request_latency:
+                p95:
+                  le: 30000
+        """
+        compact_sla_schema = {
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": {"type": ["number", "string"]},
+                },
+            },
+            "description": "Compact SLA mapping: metric -> stat -> operator -> threshold.",
+        }
+        enhanced_count = 0
+
+        def is_sla_filter_array(field_schema: dict) -> bool:
+            return (
+                field_schema.get("type") == "array"
+                and field_schema.get("items", {}).get("$ref") == "#/$defs/SLAFilter"
+            )
+
+        def walk(obj: object) -> None:
+            nonlocal enhanced_count
+            if isinstance(obj, dict):
+                properties = obj.get("properties")
+                if isinstance(properties, dict):
+                    field_schema = properties.get("sla")
+                    if isinstance(field_schema, dict) and is_sla_filter_array(
+                        field_schema
+                    ):
+                        original = copy.deepcopy(field_schema)
+                        properties["sla"] = {
+                            "description": (
+                                original.get("description", "")
+                                + " Accepts the canonical list form or compact metric/stat/op mapping."
+                            ).strip(),
+                            "title": original.get("title", "Sla"),
+                            "anyOf": [original, copy.deepcopy(compact_sla_schema)],
+                        }
+                        enhanced_count += 1
+                for value in obj.values():
+                    walk(value)
+            elif isinstance(obj, list):
+                for value in obj:
+                    walk(value)
+
+        walk(schema)
         return enhanced_count
 
     def _add_models_simplified_forms(self, schema: dict) -> None:
@@ -1333,6 +1415,88 @@ class ConfigSchemaGenerator(Generator):
             process_properties(schema["properties"])
 
         return modified_count
+
+    def _tighten_rate_series_schema_contract(self, schema: dict) -> int:
+        """Align generated rate-series JSON schema with runtime validators."""
+
+        def add_all_of_constraint(target: dict, constraint: dict) -> bool:
+            all_of = target.setdefault("allOf", [])
+            if constraint in all_of:
+                return False
+            all_of.append(constraint)
+            return True
+
+        def require_non_null_property(prop_name: str) -> dict:
+            return {
+                "required": [prop_name],
+                "properties": {prop_name: {"not": {"type": "null"}}},
+            }
+
+        def require_rate_source() -> dict:
+            return {
+                "oneOf": [
+                    require_non_null_property("rate"),
+                    require_non_null_property("rateSeries"),
+                ]
+            }
+
+        def tighten_one(node: dict) -> int:
+            title = node.get("title")
+            properties = node.get("properties")
+            if not isinstance(properties, dict):
+                return 0
+
+            count = 0
+            if title == "RateSeriesConfig":
+                points = properties.get("points")
+                if isinstance(points, dict) and points.get("minItems") != 2:
+                    points["minItems"] = 2
+                    count += 1
+                if add_all_of_constraint(
+                    node,
+                    {
+                        "oneOf": [
+                            require_non_null_property("path"),
+                            {
+                                "required": ["points"],
+                                "properties": {"points": {"minItems": 2}},
+                            },
+                        ]
+                    },
+                ):
+                    count += 1
+
+            if title in {
+                "PoissonPhase",
+                "GammaPhase",
+                "ConstantPhase",
+            } and add_all_of_constraint(node, require_rate_source()):
+                count += 1
+
+            if title == "UserCentricPhase":
+                if properties.pop("rateSeries", None) is not None:
+                    count += 1
+                required = node.setdefault("required", [])
+                if isinstance(required, list) and "rate" not in required:
+                    required.append("rate")
+                    count += 1
+                if add_all_of_constraint(node, require_non_null_property("rate")):
+                    count += 1
+
+            return count
+
+        def walk(node: object) -> int:
+            count = 0
+            if isinstance(node, dict):
+                count += tighten_one(node)
+                for value in node.values():
+                    count += walk(value)
+            elif isinstance(node, list):
+                for value in node:
+                    count += walk(value)
+            return count
+
+        return walk(schema)
 
 
 # =============================================================================

@@ -1,5 +1,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -7,11 +8,13 @@ from pydantic import ValidationError
 
 from aiperf.common.enums import CreditPhase
 from aiperf.config.flags.cli_config import CLIConfig
-from aiperf.plugin.enums import ArrivalPattern, TimingMode
+from aiperf.config.phases import ConcurrencyPhase, ConstantPhase
+from aiperf.plugin.enums import ArrivalPattern, PhaseType, TimingMode
 from aiperf.timing.config import (
     CreditPhaseConfig,
     RequestCancellationConfig,
     TimingConfig,
+    _phase_request_rate,
 )
 from tests.unit.conftest import make_run_from_cli
 
@@ -53,6 +56,7 @@ _LOADGEN_FIELDS: frozenset[str] = frozenset(
         "concurrency_ramp_duration",
         "prefill_concurrency_ramp_duration",
         "request_rate_ramp_duration",
+        "request_rate_series",
         "arrival_smoothness",
     }
 )
@@ -252,6 +256,20 @@ class TestTimingConfigFromCLIConfig:
             p.total_expected_requests,
         ) == (8, 4, 50.0, 500)
 
+    def test_maps_request_rate_series(self, tmp_path: Path) -> None:
+        json_path = tmp_path / "rate.json"
+        json_path.write_text(
+            '{"points":[{"time_s":0,"qps":5},{"time_s":10,"qps":15}]}',
+            encoding="utf-8",
+        )
+
+        cfg = _make_timing_config(request_rate_series=json_path, request_count=500)
+
+        p = next(pc for pc in cfg.phase_configs if pc.phase == CreditPhase.PROFILING)
+        assert p.request_rate == 5.0
+        assert p.request_rate_series is not None
+        assert p.request_rate_series.points[1].qps == 15.0
+
     def test_creates_warmup_when_configured(self) -> None:
         cfg = _make_timing_config(warmup_request_count=25)
         phases = [pc.phase for pc in cfg.phase_configs]
@@ -316,3 +334,25 @@ class TestTimingConfigFromCLIConfig:
         cfg = _make_timing_config(**kwargs)
         warmup = next(pc for pc in cfg.phase_configs if pc.phase == CreditPhase.WARMUP)
         assert warmup.grace_period_sec == expected
+
+
+class TestPhaseRequestRate:
+    """``_phase_request_rate`` must delegate to ``get_phase_rate`` so only
+    genuine RatePhaseConfig rates flow into the credit phase configs."""
+
+    def test_phase_request_rate_rate_phase_returns_rate(self) -> None:
+        phase = ConstantPhase(
+            name="profiling", type=PhaseType.CONSTANT, rate=5.0, requests=10
+        )
+        assert _phase_request_rate(phase) == 5.0
+
+    def test_phase_request_rate_stray_rate_attr_on_non_rate_phase_returns_none(
+        self,
+    ) -> None:
+        """A rate-shaped attribute on a non-rate phase must not leak into the
+        timing config, as the pre-helper getattr probe would have allowed."""
+        phase = ConcurrencyPhase(
+            name="profiling", type=PhaseType.CONCURRENCY, concurrency=4, requests=10
+        )
+        object.__setattr__(phase, "rate", 7.5)
+        assert _phase_request_rate(phase) is None

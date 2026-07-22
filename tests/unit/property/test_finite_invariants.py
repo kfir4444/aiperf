@@ -353,6 +353,13 @@ NUMERIC_BOUNDS_WHITELIST: set[str] = {
     # AdaptiveSearchSweep.outcome_constraints: list[OutcomeConstraint], not a
     # numeric field. Per-element OutcomeConstraint.bound is already FiniteFloat.
     "AdaptiveSearchSweep.outcome_constraints",
+    # ServerMetricsResults.warmup_endpoint_summaries: dict of summary models,
+    # not a numeric leaf — same shape as the baselined endpoint_summaries
+    # sibling; per-summary numeric fields carry their own bounds.
+    "ServerMetricsResults.warmup_endpoint_summaries",
+    # RateSeriesConfig.points: list[RateSeriesPoint], not a numeric field. The
+    # substring-based heuristic sees "int" inside "Point".
+    "RateSeriesConfig.points",
 }
 
 
